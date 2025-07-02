@@ -1,0 +1,72 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Pedido } from './entidades/pedido.entity';
+import { PedidoItem } from './entidades/pedido-item.entity';
+import { Repository } from 'typeorm';
+import { CarritoService } from 'src/carrito/carrito.service';
+import { Usuario } from 'src/usuarios/entidades/usuario.entity';
+import { CarritoItem } from 'src/carrito/entidades/carrito-item.entity';
+import { Carrito } from 'src/carrito/entidades/carrito.entity';
+
+@Injectable()
+export class PedidosService {
+  constructor(
+    @InjectRepository(Pedido) private pedidoRepo: Repository<Pedido>,
+    @InjectRepository(PedidoItem) private itemRepo: Repository<PedidoItem>,
+    @InjectRepository(CarritoItem) private carritoItemRepo: Repository<CarritoItem>,
+    private carritoService: CarritoService,
+  ) {}
+
+  async confirmarPedido(usuario: Usuario): Promise<Pedido> {
+    const carrito: Carrito = await this.carritoService.obtenerCarrito(usuario);
+
+    if (!carrito.items || carrito.items.length === 0) {
+      throw new Error('El carrito está vacío');
+    }
+
+    const pedido = this.pedidoRepo.create({
+      usuario,
+      estado: 'Pendiente',
+      fechaHora: new Date(),
+      items: [],
+      total: 0,
+    });
+
+    let total = 0;
+
+    for (const item of carrito.items) {
+      const itemPedido = new PedidoItem();
+      itemPedido.pedido = pedido;
+      itemPedido.producto = item.producto;
+      itemPedido.talle = item.talle;
+      itemPedido.cantidad = item.cantidad;
+      itemPedido.precioUnitario = +item.producto.precio;
+
+      total += itemPedido.cantidad * itemPedido.precioUnitario;
+      pedido.items.push(itemPedido);
+    }
+
+    pedido.total = total;
+
+    const pedidoGuardado = await this.pedidoRepo.save(pedido);
+
+    // Vaciar el carrito después de confirmar pedido
+    const carritoVacio = await this.carritoService.obtenerCarrito(usuario);
+    await this.carritoItemRepo.remove(carritoVacio.items);
+
+    return pedidoGuardado;
+  }
+
+  async obtenerPedidos(usuario: Usuario): Promise<Pedido[]> {
+    return this.pedidoRepo.find({
+      where: { usuario: { id: usuario.id } },
+      relations: ['items', 'items.producto', 'items.talle'],
+      order: { fechaHora: 'DESC' },
+    });
+  }
+  async vaciarCarrito(usuario: Usuario): Promise<void> {
+    const carrito = await this.carritoService.obtenerCarrito(usuario);
+    await this.carritoItemRepo.remove(carrito.items);
+  }
+  }
+
