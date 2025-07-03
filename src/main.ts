@@ -12,7 +12,7 @@ async function bootstrap() {
   // <— Aquí aplicamos el guard de JWT a todo, pero respetando @Public()
 
   
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
+  //app.useGlobalGuards(new JwtAuthGuard(reflector));
   //app.use(cookieParser());
   await app.listen(process.env.PORT ?? 3000);
 }
