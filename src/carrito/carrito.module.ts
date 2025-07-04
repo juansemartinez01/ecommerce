@@ -4,11 +4,15 @@ import { Carrito } from './entidades/carrito.entity';
 import { CarritoItem } from './entidades/carrito-item.entity';
 import { CarritoService } from './carrito.service';
 import { CarritoController } from './carrito.controller';
-import { Producto } from 'src/productos/entidades/producto.entity';
-import { Talle } from 'src/productos/entidades/talle.entity';
+
+import { ProductoColorTalle } from 'src/productos/entidades/producto-color-talle.entity';
+import { ProductosModule } from 'src/productos/productos.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Carrito, CarritoItem, Producto, Talle])],
+  imports: [
+    TypeOrmModule.forFeature([Carrito, CarritoItem, ProductoColorTalle]),
+    ProductosModule, // 👈 IMPORTANTE
+  ],
   providers: [CarritoService],
   controllers: [CarritoController],
   exports: [CarritoService],
