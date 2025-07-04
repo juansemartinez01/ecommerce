@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Categoria } from './categoria.entity';
-import { ProductoTalle } from './producto-talle.entity';
+import { ProductoColorTalle } from './producto-color-talle.entity';
+import { ImagenProducto } from './imagen-producto.entity';
 
 @Entity()
 export class Producto {
@@ -19,9 +20,15 @@ export class Producto {
   @Column({ default: false })
   enOferta: boolean;
 
+  @Column('decimal', { nullable: true })
+  precioOferta: number;
+
   @ManyToOne(() => Categoria, categoria => categoria.productos)
   categoria: Categoria;
 
-  @OneToMany(() => ProductoTalle, pt => pt.producto, { cascade: true })
-  talles: ProductoTalle[];
+  @OneToMany(() => ProductoColorTalle, pct => pct.producto, { cascade: true })
+  combinaciones: ProductoColorTalle[];
+
+  @OneToMany(() => ImagenProducto, img => img.producto, { cascade: true })
+  imagenes: ImagenProducto[];
 }

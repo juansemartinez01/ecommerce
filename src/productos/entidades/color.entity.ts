@@ -1,15 +1,14 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-
 import { ProductoColorTalle } from './producto-color-talle.entity';
 
 @Entity()
-export class Talle {
+export class Color {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ unique: true })
-  nombre: string; // XS, S, M, L, etc.
+  nombre: string;
 
-  @OneToMany(() => ProductoColorTalle, pct => pct.talle)
+  @OneToMany(() => ProductoColorTalle, pct => pct.color)
   combinaciones: ProductoColorTalle[];
 }

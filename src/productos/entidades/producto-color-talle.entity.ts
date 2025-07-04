@@ -1,17 +1,21 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Producto } from './producto.entity';
 import { Talle } from './talle.entity';
+import { Color } from './color.entity';
 
 @Entity()
-export class ProductoTalle {
+export class ProductoColorTalle {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Producto, producto => producto.talles, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Producto, producto => producto.combinaciones, { onDelete: 'CASCADE' })
   producto: Producto;
 
-  @ManyToOne(() => Talle, talle => talle.productos, { eager: true })
+  @ManyToOne(() => Talle, { eager: true })
   talle: Talle;
+
+  @ManyToOne(() => Color, { eager: true })
+  color: Color;
 
   @Column('int')
   stock: number;

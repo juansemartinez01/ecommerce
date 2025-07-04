@@ -17,18 +17,23 @@ export class ProductosController {
     return this.service.listar(filtros);
   }
 
-  @Get(':id')
-  obtenerPorId(@Param('id') id: string) {
-    return this.service.obtenerPorId(+id);
-  }
-
-  @Get('/categorias/all')
+  @Get('categorias/all')
   obtenerCategorias() {
     return this.service.obtenerCategorias();
   }
 
-  @Get('/talles/all')
+  @Get('talles/all')
   obtenerTalles() {
     return this.service.obtenerTalles();
+  }
+
+  @Get('colores/all')
+  obtenerColores() {
+    return this.service.obtenerColores();
+  }
+
+  @Get(':id')
+  obtenerPorId(@Param('id') id: string) {
+    return this.service.obtenerPorId(+id);
   }
 }

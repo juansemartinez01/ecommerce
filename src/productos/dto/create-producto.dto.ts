@@ -1,9 +1,22 @@
-import { IsNotEmpty, IsNumber, IsBoolean, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class CombinacionDto {
+  @IsNumber()
+  talleId: number;
+
+  @IsNumber()
+  colorId: number;
+
+  @IsNumber()
+  stock: number;
+}
 
 export class CreateProductoDto {
-  @IsNotEmpty()
+  @IsString()
   nombre: string;
 
+  @IsString()
   @IsOptional()
   descripcion?: string;
 
@@ -14,11 +27,18 @@ export class CreateProductoDto {
   enOferta: boolean;
 
   @IsNumber()
+  @IsOptional()
+  precioOferta?: number;
+
+  @IsNumber()
   categoriaId: number;
 
   @IsArray()
-  talles: {
-    talleId: number;
-    stock: number;
-  }[];
+  @ValidateNested({ each: true })
+  @Type(() => CombinacionDto)
+  combinaciones: CombinacionDto[];
+
+  @IsArray()
+  @IsString({ each: true })
+  imagenes: string[];
 }

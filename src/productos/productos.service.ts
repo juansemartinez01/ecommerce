@@ -2,10 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Producto } from './entidades/producto.entity';
-import { CreateProductoDto } from './dto/create-producto.dto';
 import { Categoria } from './entidades/categoria.entity';
-import { ProductoTalle } from './entidades/producto-talle.entity';
 import { Talle } from './entidades/talle.entity';
+import { Color } from './entidades/color.entity';
+import { ProductoColorTalle } from './entidades/producto-color-talle.entity';
+import { ImagenProducto } from './entidades/imagen-producto.entity';
+import { CreateProductoDto } from './dto/create-producto.dto';
 import { FiltroProductoDto } from './dto/filtro-producto.dto';
 
 @Injectable()
@@ -17,59 +19,61 @@ export class ProductosService {
     private categoriaRepo: Repository<Categoria>,
     @InjectRepository(Talle)
     private talleRepo: Repository<Talle>,
-    @InjectRepository(ProductoTalle)
-    private productoTalleRepo: Repository<ProductoTalle>,
+    @InjectRepository(Color)
+    private colorRepo: Repository<Color>,
+    @InjectRepository(ProductoColorTalle)
+    private productoColorTalleRepo: Repository<ProductoColorTalle>,
+    @InjectRepository(ImagenProducto)
+    private imagenRepo: Repository<ImagenProducto>,
   ) {}
 
   async crearProducto(dto: CreateProductoDto): Promise<Producto> {
-  const categoria = await this.categoriaRepo.findOneBy({ id: dto.categoriaId });
-  if (!categoria) {
-    throw new Error(`Categoría con id ${dto.categoriaId} no encontrada`);
-  }
+    const categoria = await this.categoriaRepo.findOneBy({ id: dto.categoriaId });
+    if (!categoria) throw new Error(`Categoría con id ${dto.categoriaId} no encontrada`);
 
-  const producto = this.productoRepo.create({
-    nombre: dto.nombre,
-    descripcion: dto.descripcion,
-    precio: dto.precio,
-    enOferta: dto.enOferta,
-    categoria,
-    talles: [],
-  });
+    const producto = this.productoRepo.create({
+      nombre: dto.nombre,
+      descripcion: dto.descripcion,
+      precio: dto.precio,
+      precioOferta: dto.precioOferta,
+      enOferta: dto.enOferta,
+      categoria,
+    });
 
-  const productoGuardado = await this.productoRepo.save(producto);
+    const productoGuardado = await this.productoRepo.save(producto);
 
-  for (const t of dto.talles) {
-    const talle = await this.talleRepo.findOneBy({ id: t.talleId });
-    if (!talle) {
-      throw new Error(`Talle con id ${t.talleId} no encontrado`);
+    // Guardar combinaciones producto-color-talle
+    for (const c of dto.combinaciones) {
+      const talle = await this.talleRepo.findOneBy({ id: c.talleId });
+      const color = await this.colorRepo.findOneBy({ id: c.colorId });
+
+      if (!talle || !color) throw new Error('Color o Talle inválido');
+
+      const pct = new ProductoColorTalle();
+      pct.producto = productoGuardado;
+      pct.talle = talle;
+      pct.color = color;
+      pct.stock = c.stock;
+
+      await this.productoColorTalleRepo.save(pct);
     }
 
-    const pt = new ProductoTalle();
-    pt.producto = productoGuardado;
-    pt.talle = talle;
-    pt.stock = t.stock;
+    // Guardar imágenes
+    for (const url of dto.imagenes) {
+      const imagen = this.imagenRepo.create({ url, producto: productoGuardado });
+      await this.imagenRepo.save(imagen);
+    }
 
-    await this.productoTalleRepo.save(pt);
+    return this.obtenerPorId(productoGuardado.id);
   }
-
-  const productoCompleto = await this.productoRepo.findOne({
-    where: { id: productoGuardado.id },
-    relations: ['categoria', 'talles', 'talles.talle'],
-  });
-
-  if (!productoCompleto) {
-    throw new Error(`Producto con id ${productoGuardado.id} no encontrado`);
-  }
-
-  return productoCompleto;
-}
-
 
   async listar(filtros: FiltroProductoDto): Promise<Producto[]> {
     const query = this.productoRepo.createQueryBuilder('producto')
       .leftJoinAndSelect('producto.categoria', 'categoria')
-      .leftJoinAndSelect('producto.talles', 'talles')
-      .leftJoinAndSelect('talles.talle', 'talle');
+      .leftJoinAndSelect('producto.combinaciones', 'combinaciones')
+      .leftJoinAndSelect('combinaciones.talle', 'talle')
+      .leftJoinAndSelect('combinaciones.color', 'color')
+      .leftJoinAndSelect('producto.imagenes', 'imagenes');
 
     if (filtros.categoriaId) {
       query.andWhere('categoria.id = :categoriaId', { categoriaId: filtros.categoriaId });
@@ -80,7 +84,7 @@ export class ProductosService {
     }
 
     if (filtros.talleId) {
-      query.andWhere('talles.talle = :talleId', { talleId: filtros.talleId });
+      query.andWhere('combinaciones.talle = :talleId', { talleId: filtros.talleId });
     }
 
     return query.getMany();
@@ -88,21 +92,29 @@ export class ProductosService {
 
   async obtenerPorId(id: number): Promise<Producto> {
     const producto = await this.productoRepo.findOne({
-        where: { id },
-        relations: ['categoria', 'talles', 'talles.talle'],
+      where: { id },
+      relations: [
+        'categoria',
+        'combinaciones',
+        'combinaciones.talle',
+        'combinaciones.color',
+        'imagenes',
+      ],
     });
-    if (!producto) {
-        throw new NotFoundException(`Producto con ID ${id} no encontrado`);
-    }
+
+    if (!producto) throw new NotFoundException(`Producto con ID ${id} no encontrado`);
     return producto;
   }
 
   async obtenerCategorias(): Promise<Categoria[]> {
-  return this.categoriaRepo.find();
-    }
+    return this.categoriaRepo.find();
+  }
 
-    async obtenerTalles(): Promise<Talle[]> {
+  async obtenerTalles(): Promise<Talle[]> {
     return this.talleRepo.find();
-    }
+  }
 
+  async obtenerColores(): Promise<Color[]> {
+    return this.colorRepo.find();
+  }
 }
