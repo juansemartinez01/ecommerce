@@ -37,10 +37,10 @@ export class PedidosService {
     for (const item of carrito.items) {
       const itemPedido = new PedidoItem();
       itemPedido.pedido = pedido;
-      itemPedido.producto = item.producto;
-      itemPedido.talle = item.talle;
+      itemPedido.producto = item.productoCombinacion.producto;
+      itemPedido.talle = item.productoCombinacion.talle;
       itemPedido.cantidad = item.cantidad;
-      itemPedido.precioUnitario = +item.producto.precio;
+      itemPedido.precioUnitario = +item.productoCombinacion.producto.precio;
 
       total += itemPedido.cantidad * itemPedido.precioUnitario;
       pedido.items.push(itemPedido);
@@ -50,7 +50,7 @@ export class PedidosService {
 
     const pedidoGuardado = await this.pedidoRepo.save(pedido);
 
-    // Vaciar el carrito después de confirmar pedido
+    // Vaciar el carrito
     const carritoVacio = await this.carritoService.obtenerCarrito(usuario);
     await this.carritoItemRepo.remove(carritoVacio.items);
 
@@ -64,9 +64,9 @@ export class PedidosService {
       order: { fechaHora: 'DESC' },
     });
   }
+
   async vaciarCarrito(usuario: Usuario): Promise<void> {
     const carrito = await this.carritoService.obtenerCarrito(usuario);
     await this.carritoItemRepo.remove(carrito.items);
   }
-  }
-
+}
