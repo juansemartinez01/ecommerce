@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Carrito } from './carrito.entity';
-import { Producto } from 'src/productos/entidades/producto.entity';
-import { Talle } from 'src/productos/entidades/talle.entity';
+import { ProductoColorTalle } from 'src/productos/entidades/producto-color-talle.entity';
 
 @Entity()
 export class CarritoItem {
@@ -11,11 +10,8 @@ export class CarritoItem {
   @ManyToOne(() => Carrito, carrito => carrito.items, { onDelete: 'CASCADE' })
   carrito: Carrito;
 
-  @ManyToOne(() => Producto)
-  producto: Producto;
-
-  @ManyToOne(() => Talle)
-  talle: Talle;
+  @ManyToOne(() => ProductoColorTalle, { eager: true })
+  productoCombinacion: ProductoColorTalle;
 
   @Column('int')
   cantidad: number;

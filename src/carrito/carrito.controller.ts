@@ -1,9 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
 import { CarritoService } from './carrito.service';
-import { AgregarItemDto } from './dto/agregar-item.dto';
-
-// Esto se adaptará cuando tengas auth y puedas obtener el usuario desde el token.
-// Por ahora simulamos un usuario con ID fijo
+import { AddCarritoItemDto } from './dto/add-carrito-item.dto';
 
 @Controller('carrito')
 export class CarritoController {
@@ -16,7 +13,7 @@ export class CarritoController {
   }
 
   @Post(':usuarioId/agregar')
-  agregarItem(@Param('usuarioId') usuarioId: string, @Body() dto: AgregarItemDto) {
+  agregarItem(@Param('usuarioId') usuarioId: string, @Body() dto: AddCarritoItemDto) {
     const usuario = { id: +usuarioId } as any;
     return this.service.agregarItem(usuario, dto);
   }
