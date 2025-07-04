@@ -3,7 +3,7 @@ import { PedidosService } from './pedidos.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('pedidos')
-@UseGuards(JwtAuthGuard)
+
 export class PedidosController {
   constructor(private readonly service: PedidosService) {}
 
