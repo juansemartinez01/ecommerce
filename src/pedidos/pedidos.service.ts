@@ -21,39 +21,28 @@ export class PedidosService {
   async confirmarPedido(dto: ConfirmarPedidoDto): Promise<PedidoDto> {
   const usuario = await this.usuarioRepo.findOneByOrFail({ id: dto.usuarioId });
 
-  // 1. Crear y guardar el pedido sin items ni total
   const pedido = this.pedidoRepo.create({
     usuario,
     estado: 'Pendiente',
     fechaHora: new Date(),
+    items: [],
     total: 0,
-
-    // Datos de envío
+    nombreCliente: dto.nombreCliente,
+    apellidoCliente: dto.apellidoCliente,
+    emailCliente: dto.emailCliente,
+    telefonoCliente: dto.telefonoCliente,
     nombreEnvio: dto.nombreEnvio,
     direccionEnvio: dto.direccionEnvio,
     codigoPostalEnvio: dto.codigoPostalEnvio,
     ciudadEnvio: dto.ciudadEnvio,
     provinciaEnvio: dto.provinciaEnvio,
     aclaracionesEnvio: dto.aclaracionesEnvio,
-
-    // Datos del cliente
-    nombreCliente: dto.nombreCliente,
-    apellidoCliente: dto.apellidoCliente,
-    emailCliente: dto.emailCliente,
-    telefonoCliente: dto.telefonoCliente,
   });
 
-  await this.pedidoRepo.save(pedido); // necesario para tener ID
-
   let total = 0;
-  const items: PedidoItem[] = [];
 
-  // 2. Crear ítems relacionados con el pedido ya guardado
   for (const item of dto.items) {
-  let combinacion: ProductoColorTalle;
-
-  try {
-    combinacion = await this.pctRepo.findOneOrFail({
+    const combinacion = await this.pctRepo.findOne({
       where: {
         producto: { id: item.productoId },
         color: { id: item.colorId },
@@ -61,49 +50,39 @@ export class PedidosService {
       },
       relations: ['producto', 'color', 'talle'],
     });
-  } catch (error) {
-    if (error.name === 'EntityNotFoundError') {
-      throw new BadRequestException(
-      `No existe la combinación para producto ID ${item.productoId} con color ID ${item.colorId} y talle ID ${item.talleId}`
-    );
 
+    if (!combinacion) {
+      throw new Error(`No existe una combinación para producto ID ${item.productoId}, talle ID ${item.talleId} y color ID ${item.colorId}`);
     }
-    throw error; // relanzamos si es otro tipo de error
+
+    if (combinacion.stock < item.cantidad) {
+      throw new Error(`Stock insuficiente para el producto "${combinacion.producto.nombre}", talle "${combinacion.talle.nombre}", color "${combinacion.color.nombre}"`);
+    }
+
+    // Descontar stock
+    combinacion.stock -= item.cantidad;
+    await this.pctRepo.save(combinacion);
+
+    const itemPedido = this.itemRepo.create({
+      pedido,
+      productoCombinacion: combinacion,
+      cantidad: item.cantidad,
+      precioUnitario: item.precioUnitario,
+    });
+
+    total += item.cantidad * item.precioUnitario;
+    pedido.items.push(itemPedido);
   }
 
-  const itemPedido = this.itemRepo.create({
-    pedido,
-    productoCombinacion: combinacion,
-    cantidad: item.cantidad,
-    precioUnitario: item.precioUnitario,
-  });
-
-  total += item.cantidad * item.precioUnitario;
-  items.push(itemPedido);
-
-
-  }
-
-  await this.itemRepo.save(items);
-
-  // 3. Actualizar el total del pedido
   pedido.total = total;
-  await this.pedidoRepo.save(pedido);
 
-  // 4. Consultar el pedido final con todas sus relaciones
-  const pedidoFinal = await this.pedidoRepo.findOneOrFail({
-    where: { id: pedido.id },
-    relations: [
-      'items',
-      'items.productoCombinacion',
-      'items.productoCombinacion.producto',
-      'items.productoCombinacion.color',
-      'items.productoCombinacion.talle',
-    ],
+  const pedidoGuardado = await this.pedidoRepo.save(pedido);
+
+  return plainToInstance(PedidoDto, pedidoGuardado, {
+    excludeExtraneousValues: true,
   });
-
-  return plainToInstance(PedidoDto, pedidoFinal, { excludeExtraneousValues: true });
 }
+
 
 
   async listarTodos(): Promise<PedidoDto[]> {
@@ -120,4 +99,33 @@ export class PedidosService {
 
     return plainToInstance(PedidoDto, pedidos, { excludeExtraneousValues: true });
   }
+
+
+  async cancelarPedido(pedidoId: number): Promise<string> {
+  const pedido = await this.pedidoRepo.findOne({
+    where: { id: pedidoId },
+    relations: ['items', 'items.productoCombinacion'],
+  });
+
+  if (!pedido) {
+    throw new Error(`Pedido con ID ${pedidoId} no encontrado`);
+  }
+
+  if (pedido.estado === 'Cancelado') {
+    throw new Error(`El pedido ya está cancelado`);
+  }
+
+  // Devolver el stock
+  for (const item of pedido.items) {
+    const combinacion = item.productoCombinacion;
+    combinacion.stock += item.cantidad;
+    await this.pctRepo.save(combinacion);
+  }
+
+  // Cambiar estado del pedido
+  pedido.estado = 'Cancelado';
+  await this.pedidoRepo.save(pedido);
+
+  return `Pedido ID ${pedidoId} cancelado y stock restituido`;
+}
 }

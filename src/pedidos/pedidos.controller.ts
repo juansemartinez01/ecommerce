@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
 import { ConfirmarPedidoDto } from './dto/confirmar-pedido.dto';
 
@@ -15,4 +15,9 @@ export class PedidosController {
   listarTodos() {
     return this.service.listarTodos();
   }
+
+  @Post('cancelar/:id')
+async cancelar(@Param('id') id: number) {
+  return this.service.cancelarPedido(+id);
+}
 }
