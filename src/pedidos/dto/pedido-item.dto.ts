@@ -1,5 +1,16 @@
 import { Expose, Type } from 'class-transformer';
 
+class ProductoSimpleDto {
+  @Expose()
+  id: number;
+
+  @Expose()
+  nombre: string;
+
+  @Expose()
+  precio: number;
+}
+
 export class PedidoItemDto {
   @Expose()
   id: number;
@@ -15,16 +26,5 @@ export class PedidoItemDto {
   producto: ProductoSimpleDto;
 
   @Expose()
-  talle: any; // Si querés podés hacer también un TalleDto
-}
-
-class ProductoSimpleDto {
-  @Expose()
-  id: number;
-
-  @Expose()
-  nombre: string;
-
-  @Expose()
-  precio: number;
-}
+  talle: any; //
+ }
