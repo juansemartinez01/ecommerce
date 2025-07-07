@@ -7,6 +7,8 @@ import { CarritoService } from 'src/carrito/carrito.service';
 import { Usuario } from 'src/usuarios/entidades/usuario.entity';
 import { CarritoItem } from 'src/carrito/entidades/carrito-item.entity';
 import { Carrito } from 'src/carrito/entidades/carrito.entity';
+import { plainToInstance } from 'class-transformer';
+import { PedidoDto } from './dto/pedido.dto';
 
 @Injectable()
 export class PedidosService {
@@ -17,11 +19,11 @@ export class PedidosService {
     private carritoService: CarritoService,
   ) {}
 
-  async confirmarPedido(usuario: Usuario): Promise<Pedido> {
-    const carrito: Carrito = await this.carritoService.obtenerCarrito(usuario);
+  async confirmarPedido(usuario: Usuario): Promise<PedidoDto> {
+  const carrito: Carrito = await this.carritoService.obtenerCarrito(usuario);
 
-    if (!carrito.items || carrito.items.length === 0) {
-      throw new Error('El carrito está vacío');
+  if (!carrito.items || carrito.items.length === 0) {
+    throw new Error('El carrito está vacío');
     }
 
     const pedido = this.pedidoRepo.create({
@@ -54,16 +56,20 @@ export class PedidosService {
     const carritoVacio = await this.carritoService.obtenerCarrito(usuario);
     await this.carritoItemRepo.remove(carritoVacio.items);
 
-    return pedidoGuardado;
+    // Transformar a DTO para evitar estructura circular
+    return plainToInstance(PedidoDto, pedidoGuardado, { excludeExtraneousValues: true });
   }
 
-  async obtenerPedidos(usuario: Usuario): Promise<Pedido[]> {
-    return this.pedidoRepo.find({
-      where: { usuario: { id: usuario.id } },
-      relations: ['items', 'items.producto', 'items.talle'],
-      order: { fechaHora: 'DESC' },
-    });
-  }
+  async obtenerPedidos(usuario: Usuario): Promise<PedidoDto[]> {
+  const pedidos = await this.pedidoRepo.find({
+    where: { usuario: { id: usuario.id } },
+    relations: ['items', 'items.producto', 'items.talle'],
+    order: { fechaHora: 'DESC' },
+  });
+
+  return plainToInstance(PedidoDto, pedidos, { excludeExtraneousValues: true });
+}
+
 
   async vaciarCarrito(usuario: Usuario): Promise<void> {
     const carrito = await this.carritoService.obtenerCarrito(usuario);

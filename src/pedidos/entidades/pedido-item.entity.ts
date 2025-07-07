@@ -8,14 +8,15 @@ export class PedidoItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Pedido, pedido => pedido.items, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Pedido, pedido => pedido.items, { onDelete: 'CASCADE', eager: false })
   pedido: Pedido;
 
-  @ManyToOne(() => Producto)
+  @ManyToOne(() => Producto, { eager: false })
   producto: Producto;
 
-  @ManyToOne(() => Talle)
+  @ManyToOne(() => Talle, { eager: false })
   talle: Talle;
+
 
   @Column('int')
   cantidad: number;
