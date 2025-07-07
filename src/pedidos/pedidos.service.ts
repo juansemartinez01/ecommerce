@@ -45,6 +45,12 @@ export class PedidosService {
       relations: ['producto', 'color', 'talle'],
     });
 
+    if (!combinacion) {
+      throw new Error(
+        `No existe combinación para producto ID ${item.productoId} con talle ID ${item.talleId} y color ID ${item.colorId}`
+      );
+    }
+
     const itemPedido = this.itemRepo.create({
       pedido,
       productoCombinacion: combinacion,
