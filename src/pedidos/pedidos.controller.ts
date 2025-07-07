@@ -7,6 +7,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class PedidosController {
   constructor(private readonly service: PedidosService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   confirmar(@Req() req) {
     return this.service.confirmarPedido(req.user);
