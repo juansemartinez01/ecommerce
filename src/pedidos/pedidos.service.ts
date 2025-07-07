@@ -19,45 +19,64 @@ export class PedidosService {
   ) {}
 
   async confirmarPedido(dto: ConfirmarPedidoDto): Promise<PedidoDto> {
-    const usuario = await this.usuarioRepo.findOneByOrFail({ id: dto.usuarioId });
+  const usuario = await this.usuarioRepo.findOneByOrFail({ id: dto.usuarioId });
 
-    const pedido = this.pedidoRepo.create({
-      usuario,
-      estado: 'Pendiente',
-      fechaHora: new Date(),
-      items: [],
-      total: 0,
+  // 1. Crear y guardar el pedido sin items ni total
+  const pedido = this.pedidoRepo.create({
+    usuario,
+    estado: 'Pendiente',
+    fechaHora: new Date(),
+    total: 0,
+  });
+
+  await this.pedidoRepo.save(pedido); // necesario para tener ID
+
+  let total = 0;
+  const items: PedidoItem[] = [];
+
+  // 2. Crear ítems relacionados con el pedido ya guardado
+  for (const item of dto.items) {
+    const combinacion = await this.pctRepo.findOneOrFail({
+      where: {
+        producto: { id: item.productoId },
+        color: { id: item.colorId },
+        talle: { id: item.talleId },
+      },
+      relations: ['producto', 'color', 'talle'],
     });
 
-    let total = 0;
+    const itemPedido = this.itemRepo.create({
+      pedido,
+      productoCombinacion: combinacion,
+      cantidad: item.cantidad,
+      precioUnitario: item.precioUnitario,
+    });
 
-    for (const item of dto.items) {
-      const combinacion = await this.pctRepo.findOneOrFail({
-        where: {
-          producto: { id: item.productoId },
-          color: { id: item.colorId },
-          talle: { id: item.talleId },
-        },
-        relations: ['producto', 'color', 'talle'],
-      });
-
-      const itemPedido = this.itemRepo.create({
-        pedido,
-        productoCombinacion: combinacion,
-        cantidad: item.cantidad,
-        precioUnitario: item.precioUnitario,
-      });
-
-      total += item.cantidad * item.precioUnitario;
-      pedido.items.push(itemPedido);
-    }
-
-    pedido.total = total;
-
-    const pedidoGuardado = await this.pedidoRepo.save(pedido);
-
-    return plainToInstance(PedidoDto, pedidoGuardado, { excludeExtraneousValues: true });
+    total += item.cantidad * item.precioUnitario;
+    items.push(itemPedido);
   }
+
+  await this.itemRepo.save(items);
+
+  // 3. Actualizar el total del pedido
+  pedido.total = total;
+  await this.pedidoRepo.save(pedido);
+
+  // 4. Consultar el pedido final con todas sus relaciones
+  const pedidoFinal = await this.pedidoRepo.findOneOrFail({
+    where: { id: pedido.id },
+    relations: [
+      'items',
+      'items.productoCombinacion',
+      'items.productoCombinacion.producto',
+      'items.productoCombinacion.color',
+      'items.productoCombinacion.talle',
+    ],
+  });
+
+  return plainToInstance(PedidoDto, pedidoFinal, { excludeExtraneousValues: true });
+}
+
 
   async listarTodos(): Promise<PedidoDto[]> {
     const pedidos = await this.pedidoRepo.find({
