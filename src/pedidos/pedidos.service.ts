@@ -21,11 +21,11 @@ export class PedidosService {
   async confirmarPedido(dto: ConfirmarPedidoDto): Promise<PedidoDto> {
   const usuario = await this.usuarioRepo.findOneByOrFail({ id: dto.usuarioId });
 
+  // Crear pedido base
   const pedido = this.pedidoRepo.create({
     usuario,
     estado: 'Pendiente',
     fechaHora: new Date(),
-    items: [],
     total: 0,
     nombreCliente: dto.nombreCliente,
     apellidoCliente: dto.apellidoCliente,
@@ -39,7 +39,11 @@ export class PedidosService {
     aclaracionesEnvio: dto.aclaracionesEnvio,
   });
 
+  // Guardar el pedido para que tenga ID (requerido para la relación)
+  const pedidoGuardado = await this.pedidoRepo.save(pedido);
+
   let total = 0;
+  const itemsPedido: PedidoItem[] = [];
 
   for (const item of dto.items) {
     const combinacion = await this.pctRepo.findOne({
@@ -59,29 +63,34 @@ export class PedidosService {
       throw new Error(`Stock insuficiente para el producto "${combinacion.producto.nombre}", talle "${combinacion.talle.nombre}", color "${combinacion.color.nombre}"`);
     }
 
-    // Descontar stock
+    // Descontar stock (usamos save, no update para evitar errores)
     combinacion.stock -= item.cantidad;
-    await this.pctRepo.update(combinacion.id, { stock: combinacion.stock });
+    await this.pctRepo.save(combinacion);
 
-    const itemPedido = this.itemRepo.create({
-      pedido,
+    const nuevoItem = this.itemRepo.create({
+      pedido: pedidoGuardado,
       productoCombinacion: combinacion,
       cantidad: item.cantidad,
       precioUnitario: item.precioUnitario,
     });
 
     total += item.cantidad * item.precioUnitario;
-    pedido.items.push(itemPedido);
+    itemsPedido.push(nuevoItem);
   }
 
-  pedido.total = total;
+  // Guardar los ítems del pedido
+  await this.itemRepo.save(itemsPedido);
 
-  const pedidoGuardado = await this.pedidoRepo.save(pedido);
+  // Actualizar total del pedido
+  pedidoGuardado.total = total;
+  pedidoGuardado.items = itemsPedido;
+  await this.pedidoRepo.save(pedidoGuardado);
 
   return plainToInstance(PedidoDto, pedidoGuardado, {
     excludeExtraneousValues: true,
   });
 }
+
 
 
 
