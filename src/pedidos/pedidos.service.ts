@@ -61,7 +61,7 @@ export class PedidosService {
 
     // Descontar stock
     combinacion.stock -= item.cantidad;
-    await this.pctRepo.save(combinacion);
+    await this.pctRepo.update(combinacion.id, { stock: combinacion.stock });
 
     const itemPedido = this.itemRepo.create({
       pedido,
