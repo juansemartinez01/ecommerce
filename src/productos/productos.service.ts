@@ -119,57 +119,63 @@ export class ProductosService {
     return this.colorRepo.find();
   }
 
-  async modificarProducto(id: number, dto: UpdateProductoDto): Promise<Producto> {
-  const producto = await this.productoRepo.findOne({
-    where: { id },
-    relations: ['combinaciones', 'imagenes'],
-  });
+  async modificarProducto(id: number, dto: Partial<CreateProductoDto>): Promise<Producto> {
+  const producto = await this.productoRepo.findOneBy({ id });
+  if (!producto) throw new Error(`Producto con id ${id} no encontrado`);
 
-  if (!producto) throw new NotFoundException(`Producto con ID ${id} no encontrado`);
-
-  if (dto.nombre !== undefined) producto.nombre = dto.nombre;
-  if (dto.descripcion !== undefined) producto.descripcion = dto.descripcion;
+  // Actualizar campos si vienen en el DTO
+  if (dto.nombre) producto.nombre = dto.nombre;
+  if (dto.descripcion) producto.descripcion = dto.descripcion;
   if (dto.precio !== undefined) producto.precio = dto.precio;
   if (dto.precioOferta !== undefined) producto.precioOferta = dto.precioOferta;
   if (dto.enOferta !== undefined) producto.enOferta = dto.enOferta;
 
   if (dto.categoriaId) {
     const categoria = await this.categoriaRepo.findOneBy({ id: dto.categoriaId });
-    if (!categoria) throw new NotFoundException(`Categoría con ID ${dto.categoriaId} no encontrada`);
+    if (!categoria) throw new Error(`Categoría con id ${dto.categoriaId} no encontrada`);
     producto.categoria = categoria;
   }
 
+  // Guardar modificaciones básicas
   await this.productoRepo.save(producto);
 
-  // Actualizar combinaciones (eliminar y volver a crear)
-  if (dto.combinaciones) {
-    await this.productoColorTalleRepo.delete({ producto: { id } });
+  // Actualizar combinaciones si vienen en el DTO
+  if (dto.combinaciones && dto.combinaciones.length > 0) {
     for (const c of dto.combinaciones) {
-      const talle = await this.talleRepo.findOneBy({ id: c.talleId });
-      const color = await this.colorRepo.findOneBy({ id: c.colorId });
-      if (!talle || !color) throw new Error('Color o Talle inválido');
+      const existente = await this.productoColorTalleRepo.findOne({
+        where: {
+          producto: { id },
+          color: { id: c.colorId },
+          talle: { id: c.talleId },
+        },
+        relations: ['producto', 'color', 'talle'],
+      });
 
-      const pct = new ProductoColorTalle();
-      pct.producto = producto;
-      pct.talle = talle;
-      pct.color = color;
-      pct.stock = c.stock;
+      if (existente) {
+        // Solo actualizar stock
+        existente.stock = c.stock;
+        await this.productoColorTalleRepo.save(existente);
+      } else {
+        // Crear nueva combinación si no existía
+        const color = await this.colorRepo.findOneBy({ id: c.colorId });
+        const talle = await this.talleRepo.findOneBy({ id: c.talleId });
+        if (!color || !talle) throw new Error('Color o Talle inválido');
 
-      await this.productoColorTalleRepo.save(pct);
-    }
-  }
+        const nueva = this.productoColorTalleRepo.create({
+          producto,
+          color,
+          talle,
+          stock: c.stock,
+        });
 
-  // Actualizar imágenes (eliminar y volver a crear)
-  if (dto.imagenes) {
-    await this.imagenRepo.delete({ producto: { id } });
-    for (const url of dto.imagenes) {
-      const imagen = this.imagenRepo.create({ url, producto });
-      await this.imagenRepo.save(imagen);
+        await this.productoColorTalleRepo.save(nueva);
+      }
     }
   }
 
   return this.obtenerPorId(id);
 }
+
 
 async eliminarProducto(id: number): Promise<void> {
   const producto = await this.productoRepo.findOneBy({ id });
