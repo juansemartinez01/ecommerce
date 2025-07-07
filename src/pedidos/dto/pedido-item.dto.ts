@@ -1,23 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 
-export class ProductoCombinacionDto {
-  @Expose()
-  id: number;
-
-  @Expose()
-  @Type(() => ProductoSimpleDto)
-  producto: ProductoSimpleDto;
-
-  @Expose()
-  @Type(() => TalleDto)
-  talle: TalleDto;
-
-  @Expose()
-  @Type(() => ColorDto)
-  color: ColorDto;
-}
-
-class ProductoSimpleDto {
+export class ProductoDto {
   @Expose()
   id: number;
 
@@ -28,7 +11,7 @@ class ProductoSimpleDto {
   precio: number;
 }
 
-class TalleDto {
+export class ColorDto {
   @Expose()
   id: number;
 
@@ -36,12 +19,29 @@ class TalleDto {
   nombre: string;
 }
 
-class ColorDto {
+export class TalleDto {
   @Expose()
   id: number;
 
   @Expose()
   nombre: string;
+}
+
+export class ProductoCombinacionDto {
+  @Expose()
+  id: number;
+
+  @Expose()
+  @Type(() => ProductoDto)
+  producto: ProductoDto;
+
+  @Expose()
+  @Type(() => TalleDto)
+  talle: TalleDto;
+
+  @Expose()
+  @Type(() => ColorDto)
+  color: ColorDto;
 }
 
 export class PedidoItemDto {

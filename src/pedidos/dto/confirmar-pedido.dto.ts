@@ -6,10 +6,10 @@ export class ItemPedidoDto {
   productoId: number;
 
   @IsNumber()
-  talleId: number;
+  colorId: number;
 
   @IsNumber()
-  colorId: number;
+  talleId: number;
 
   @IsNumber()
   cantidad: number;
@@ -19,11 +19,11 @@ export class ItemPedidoDto {
 }
 
 export class ConfirmarPedidoDto {
+  @IsNumber()
+  usuarioId: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ItemPedidoDto)
   items: ItemPedidoDto[];
-
-  @IsNumber()
-  usuarioId: number; // ya que también lo vas a mandar por body
 }
