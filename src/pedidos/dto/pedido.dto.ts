@@ -14,7 +14,40 @@ export class PedidoDto {
   @Expose()
   fechaHora: Date;
 
+  // 🧾 Ítems del pedido
   @Expose()
   @Type(() => PedidoItemDto)
   items: PedidoItemDto[];
+
+  // 👤 Datos del cliente
+  @Expose()
+  nombreCliente?: string;
+
+  @Expose()
+  apellidoCliente?: string;
+
+  @Expose()
+  emailCliente?: string;
+
+  @Expose()
+  telefonoCliente?: string;
+
+  // 🏠 Datos de envío
+  @Expose()
+  nombreEnvio?: string;
+
+  @Expose()
+  direccionEnvio?: string;
+
+  @Expose()
+  codigoPostalEnvio?: string;
+
+  @Expose()
+  ciudadEnvio?: string;
+
+  @Expose()
+  provinciaEnvio?: string;
+
+  @Expose()
+  aclaracionesEnvio?: string;
 }
