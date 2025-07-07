@@ -27,6 +27,20 @@ export class PedidosService {
     estado: 'Pendiente',
     fechaHora: new Date(),
     total: 0,
+
+    // Datos de envío
+    nombreEnvio: dto.nombreEnvio,
+    direccionEnvio: dto.direccionEnvio,
+    codigoPostalEnvio: dto.codigoPostalEnvio,
+    ciudadEnvio: dto.ciudadEnvio,
+    provinciaEnvio: dto.provinciaEnvio,
+    aclaracionesEnvio: dto.aclaracionesEnvio,
+
+    // Datos del cliente
+    nombreCliente: dto.nombreCliente,
+    apellidoCliente: dto.apellidoCliente,
+    emailCliente: dto.emailCliente,
+    telefonoCliente: dto.telefonoCliente,
   });
 
   await this.pedidoRepo.save(pedido); // necesario para tener ID
