@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pedido } from './entidades/pedido.entity';
 import { PedidoItem } from './entidades/pedido-item.entity';
@@ -36,7 +36,10 @@ export class PedidosService {
 
   // 2. Crear ítems relacionados con el pedido ya guardado
   for (const item of dto.items) {
-    const combinacion = await this.pctRepo.findOneOrFail({
+  let combinacion: ProductoColorTalle;
+
+  try {
+    combinacion = await this.pctRepo.findOneOrFail({
       where: {
         producto: { id: item.productoId },
         color: { id: item.colorId },
@@ -44,22 +47,27 @@ export class PedidosService {
       },
       relations: ['producto', 'color', 'talle'],
     });
+  } catch (error) {
+    if (error.name === 'EntityNotFoundError') {
+      throw new BadRequestException(
+      `No existe la combinación para producto ID ${item.productoId} con color ID ${item.colorId} y talle ID ${item.talleId}`
+    );
 
-    if (!combinacion) {
-      throw new Error(
-        `No existe combinación para producto ID ${item.productoId} con talle ID ${item.talleId} y color ID ${item.colorId}`
-      );
     }
+    throw error; // relanzamos si es otro tipo de error
+  }
 
-    const itemPedido = this.itemRepo.create({
-      pedido,
-      productoCombinacion: combinacion,
-      cantidad: item.cantidad,
-      precioUnitario: item.precioUnitario,
-    });
+  const itemPedido = this.itemRepo.create({
+    pedido,
+    productoCombinacion: combinacion,
+    cantidad: item.cantidad,
+    precioUnitario: item.precioUnitario,
+  });
 
-    total += item.cantidad * item.precioUnitario;
-    items.push(itemPedido);
+  total += item.cantidad * item.precioUnitario;
+  items.push(itemPedido);
+
+
   }
 
   await this.itemRepo.save(items);
