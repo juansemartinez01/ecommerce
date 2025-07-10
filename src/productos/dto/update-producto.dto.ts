@@ -32,4 +32,8 @@ export class UpdateProductoDto {
   @IsOptional()
   @IsArray()
   imagenes?: string[]; // URLs
+
+  @IsOptional()
+  @IsBoolean()
+  destacado?: boolean;
 }

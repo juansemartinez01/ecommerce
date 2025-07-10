@@ -41,4 +41,8 @@ export class CreateProductoDto {
   @IsArray()
   @IsString({ each: true })
   imagenes: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  destacado?: boolean;
 }

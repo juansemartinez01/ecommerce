@@ -38,6 +38,7 @@ export class ProductosService {
       precio: dto.precio,
       precioOferta: dto.precioOferta,
       enOferta: dto.enOferta,
+      destacado: dto.destacado ?? null,
       categoria,
     });
 
@@ -88,6 +89,11 @@ export class ProductosService {
       query.andWhere('combinaciones.talle = :talleId', { talleId: filtros.talleId });
     }
 
+    if (filtros.destacado !== undefined) {
+      query.andWhere('producto.destacado = :destacado', { destacado: filtros.destacado });
+    }
+
+
     return query.getMany();
   }
 
@@ -129,6 +135,7 @@ export class ProductosService {
   if (dto.precio !== undefined) producto.precio = dto.precio;
   if (dto.precioOferta !== undefined) producto.precioOferta = dto.precioOferta;
   if (dto.enOferta !== undefined) producto.enOferta = dto.enOferta;
+  if (dto.destacado !== undefined) producto.destacado = dto.destacado;
 
   if (dto.categoriaId) {
     const categoria = await this.categoriaRepo.findOneBy({ id: dto.categoriaId });

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pedido } from './entidades/pedido.entity';
 import { PedidoItem } from './entidades/pedido-item.entity';
@@ -137,4 +137,15 @@ export class PedidosService {
 
   return `Pedido ID ${pedidoId} cancelado y stock restituido`;
 }
+
+async actualizarEstado(id: number, nuevoEstado: string): Promise<Pedido> {
+  const pedido = await this.pedidoRepo.findOneBy({ id });
+  if (!pedido) throw new NotFoundException(`Pedido con ID ${id} no encontrado`);
+
+  pedido.estado = nuevoEstado;
+  await this.pedidoRepo.save(pedido);
+
+  return pedido;
+}
+
 }

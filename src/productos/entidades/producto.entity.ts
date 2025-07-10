@@ -31,4 +31,7 @@ export class Producto {
 
   @OneToMany(() => ImagenProducto, img => img.producto, { cascade: true })
   imagenes: ImagenProducto[];
+
+  @Column({ type: 'boolean', nullable: true })
+  destacado: boolean | null;
 }
