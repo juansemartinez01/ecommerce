@@ -9,10 +9,14 @@ import { CarritoModule } from './carrito/carrito.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { DescuentosModule } from './descuentos/descuentos.module';
 import { FilesModule } from './files/files.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     AuthModule,
     UsuariosModule,
     ProductosModule,
