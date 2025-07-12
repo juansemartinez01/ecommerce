@@ -1,4 +1,4 @@
-import { IsOptional, IsNumberString } from 'class-validator';
+import { IsOptional, IsNumberString, IsBoolean } from 'class-validator';
 
 export class FiltroProductoDto {
   @IsOptional()
@@ -9,4 +9,9 @@ export class FiltroProductoDto {
 
   @IsOptional()
   enOferta?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  destacado?: boolean;
+
 }
