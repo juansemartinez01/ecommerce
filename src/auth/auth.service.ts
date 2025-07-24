@@ -14,15 +14,22 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usuarioRepo.findOneBy({ email });
-    if (!user) return null;
+  console.log('🔍 Email recibido:', email);
+  const user = await this.usuarioRepo.findOneBy({ email });
+  console.log('👤 Usuario encontrado:', user);
 
-    const isValid = await bcrypt.compare(password, user.claveHash);
-    if (!isValid) return null;
+  if (!user) return null;
 
-    const { claveHash, ...rest } = user;
-    return rest;
-  }
+  const isValid = await bcrypt.compare(password, user.claveHash);
+  console.log('🔐 Password válido:', isValid);
+
+  if (!isValid) return null;
+
+  const { claveHash, ...rest } = user;
+  console.log('✅ Login exitoso:', rest);
+  return rest;
+}
+
 
   async login(user: any) {
     const payload = { sub: user.id, email: user.email };
