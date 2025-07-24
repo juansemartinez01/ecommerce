@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Usuario } from 'src/usuarios/entidades/usuario.entity';
@@ -12,6 +13,25 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usuarioRepo.findOneBy({ email });
+    if (!user) return null;
+
+    const isValid = await bcrypt.compare(password, user.claveHash);
+    if (!isValid) return null;
+
+    const { claveHash, ...rest } = user;
+    return rest;
+  }
+
+  async login(user: any) {
+    const payload = { sub: user.id, email: user.email };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user,
+    };
+  }
+
   async registrar(nombre: string, email: string, clave: string) {
     const existente = await this.usuarioRepo.findOneBy({ email });
     if (existente) throw new UnauthorizedException('Email ya registrado');
@@ -20,20 +40,10 @@ export class AuthService {
     const nuevoUsuario = this.usuarioRepo.create({ nombre, email, claveHash });
     const usuario = await this.usuarioRepo.save(nuevoUsuario);
 
+    const payload = { sub: usuario.id, email };
     return {
-      token: this.jwtService.sign({ sub: usuario.id, email }),
-    };
-  }
-
-  async login(email: string, clave: string) {
-    const usuario = await this.usuarioRepo.findOneBy({ email });
-    if (!usuario) throw new UnauthorizedException('Credenciales inválidas');
-
-    const esValido = await bcrypt.compare(clave, usuario.claveHash);
-    if (!esValido) throw new UnauthorizedException('Credenciales inválidas');
-
-    return {
-      token: this.jwtService.sign({ sub: usuario.id, email }),
+      access_token: this.jwtService.sign(payload),
+      user: usuario,
     };
   }
 

@@ -1,9 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+// src/auth/auth.controller.ts
+import { Controller, Post, Req, Body, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { LocalAuthGuard } from './local-auth.guard';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly service: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('registro')
   async registro(
@@ -11,14 +15,18 @@ export class AuthController {
     @Body('email') email: string,
     @Body('clave') clave: string,
   ) {
-    return this.service.registrar(nombre, email, clave);
+    return this.authService.registrar(nombre, email, clave);
   }
 
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(
-    @Body('email') email: string,
-    @Body('clave') clave: string,
-  ) {
-    return this.service.login(email, clave);
+  async login(@Req() req: Request) {
+    return this.authService.login(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  me(@Req() req: Request) {
+    return req.user;
   }
 }
