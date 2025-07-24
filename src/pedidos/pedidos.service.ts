@@ -58,12 +58,14 @@ export class PedidosService {
     });
 
     if (!combinacion) {
-      throw new Error(`No existe una combinación para producto ID ${item.productoId}, talle ID ${item.talleId} y color ID ${item.colorId}`);
-    }
+    throw new BadRequestException(`No existe una combinación para producto ID ${item.productoId}, talle ID ${item.talleId} y color ID ${item.colorId}`);
+  }
+
 
     if (combinacion.stock < item.cantidad) {
-      throw new Error(`Stock insuficiente para el producto "${combinacion.producto.nombre}", talle "${combinacion.talle.nombre}", color "${combinacion.color.nombre}"`);
-    }
+    throw new BadRequestException(`Stock insuficiente para el producto "${combinacion.producto.nombre}", talle "${combinacion.talle.nombre}", color "${combinacion.color.nombre}"`);
+  }
+
 
     // Descontar stock (usamos save, no update para evitar errores)
     combinacion.stock -= item.cantidad;
