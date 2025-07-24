@@ -8,6 +8,9 @@ import {
 } from 'typeorm';
 import { Usuario } from 'src/usuarios/entidades/usuario.entity';
 import { PedidoItem } from './pedido-item.entity';
+import { MetodoPago } from '../enum/metodo-pago.enum';
+import { EstadoPago } from '../enum/estado-pago.enum';
+import { EstadoPedido } from '../enum/estado-pedido.enum';
 
 @Entity()
 export class Pedido {
@@ -60,5 +63,26 @@ emailCliente: string;
 
 @Column({ nullable: true })
 telefonoCliente: string;
+
+@Column({
+  type: 'enum',
+  enum: MetodoPago,
+  default: MetodoPago.CAJA,
+})
+metodoPago: MetodoPago;
+
+@Column({
+  type: 'enum',
+  enum: EstadoPago,
+  default: EstadoPago.PENDIENTE,
+})
+estadoPago: EstadoPago;
+
+@Column({
+  type: 'enum',
+  enum: EstadoPedido,
+  default: EstadoPedido.PENDIENTE,
+})
+estadoPedido: EstadoPedido;
 
 }

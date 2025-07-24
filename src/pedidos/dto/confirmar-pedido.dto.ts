@@ -1,5 +1,6 @@
-import { IsArray, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { MetodoPago } from '../enum/metodo-pago.enum';
 
 export class ItemPedidoDto {
   @IsNumber()
@@ -58,4 +59,8 @@ export class ConfirmarPedidoDto {
 
   @IsOptional() @IsString()
   aclaracionesEnvio?: string;
+
+  @IsEnum(MetodoPago, { message: 'Método de pago inválido' })
+metodoPago: MetodoPago;
+
 }

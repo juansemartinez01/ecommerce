@@ -50,4 +50,14 @@ export class PedidoDto {
 
   @Expose()
   aclaracionesEnvio?: string;
+
+  @Expose()
+metodoPago: string;
+
+@Expose()
+estadoPago: string;
+
+@Expose()
+estadoPedido: string;
+
 }

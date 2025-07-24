@@ -37,6 +37,8 @@ export class PedidosService {
     ciudadEnvio: dto.ciudadEnvio,
     provinciaEnvio: dto.provinciaEnvio,
     aclaracionesEnvio: dto.aclaracionesEnvio,
+    metodoPago: dto.metodoPago,
+  // estadoPago y estadoPedido se ponen por defecto
   });
 
   // Guardar el pedido para que tenga ID (requerido para la relación)
