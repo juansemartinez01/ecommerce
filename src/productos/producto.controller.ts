@@ -8,6 +8,8 @@ import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { Categoria } from './entidades/categoria.entity';
 import { Color } from './entidades/color.entity';
 import { CreateColorDto } from './dto/create-color.dto';
+import { Talle } from './entidades/talle.entity';
+import { CreateTalleDto } from './dto/create-talle.dto';
 
 @Controller('productos')
 export class ProductosController {
@@ -99,5 +101,29 @@ getColoresActivos(): Promise<Color[]> {
 @Get('colores/all')
 getColoresTodos(): Promise<Color[]> {
   return this.service.obtenerColores();
+}
+
+//Talles
+
+@Post('talles')
+crearTalle(@Body() dto: CreateTalleDto): Promise<Talle> {
+  return this.service.crearTalle(dto);
+}
+
+@Patch('talles/:id/baja')
+borrarTalle(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  return this.service.borrarTalleLogicamente(id);
+}
+
+@Public()
+@Get('talles/activos')
+getTallesActivos(): Promise<Talle[]> {
+  return this.service.obtenerTallesActivos();
+}
+
+@Public()
+@Get('talles/all')
+getTallesTodos(): Promise<Talle[]> {
+  return this.service.obtenerTalles();
 }
 }

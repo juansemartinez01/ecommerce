@@ -7,8 +7,11 @@ export class Talle {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   nombre: string; // XS, S, M, L, etc.
+
+  @Column({ default: true })
+  activo: boolean;
 
   @OneToMany(() => ProductoColorTalle, pct => pct.talle)
   combinaciones: ProductoColorTalle[];

@@ -12,6 +12,7 @@ import { FiltroProductoDto } from './dto/filtro-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { CreateColorDto } from './dto/create-color.dto';
+import { CreateTalleDto } from './dto/create-talle.dto';
 
 @Injectable()
 export class ProductosService {
@@ -117,9 +118,7 @@ export class ProductosService {
 
   
 
-  async obtenerTalles(): Promise<Talle[]> {
-    return this.talleRepo.find();
-  }
+  
 
   
 
@@ -238,6 +237,32 @@ async crearCategoria(dto: CreateCategoriaDto): Promise<Categoria> {
     return this.colorRepo.find({ order: { nombre: 'ASC' } });
   }
 
+
+
+  //Talles
+
+  async crearTalle(dto: CreateTalleDto): Promise<Talle> {
+    const nuevo = this.talleRepo.create(dto);
+    return this.talleRepo.save(nuevo);
+  }
+
+  async borrarTalleLogicamente(id: number): Promise<void> {
+    const talle = await this.talleRepo.findOne({ where: { id } });
+    if (!talle) throw new NotFoundException('Talle no encontrado');
+    talle.activo = false;
+    await this.talleRepo.save(talle);
+  }
+
+  async obtenerTallesActivos(): Promise<Talle[]> {
+    return this.talleRepo.find({
+      where: { activo: true },
+      order: { nombre: 'ASC' }
+    });
+  }
+
+  async obtenerTalles(): Promise<Talle[]> {
+    return this.talleRepo.find({ order: { nombre: 'ASC' } });
+  }
 
 
 }
