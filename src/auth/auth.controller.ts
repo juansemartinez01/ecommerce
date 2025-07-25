@@ -1,5 +1,5 @@
 // src/auth/auth.controller.ts
-import { Controller, Post, Req, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Req, Body, UseGuards, Get, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -20,10 +20,20 @@ export class AuthController {
   }
 
   @Public()
-  @Post('login')
-  async login(@Req() req: Request) {
-    return this.authService.login(req.user);
+@Post('login')
+async login(
+  @Body('email') email: string,
+  @Body('clave') clave: string,
+) {
+  const user = await this.authService.validateUser(email, clave);
+
+  if (!user) {
+    throw new UnauthorizedException('Credenciales inválidas');
   }
+
+  return this.authService.login(user);
+}
+
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
