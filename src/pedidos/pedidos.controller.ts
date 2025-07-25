@@ -2,11 +2,13 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
 import { ConfirmarPedidoDto } from './dto/confirmar-pedido.dto';
 import { UpdateEstadoPedidoDto } from './dto/update-estado-pedido.dto';
+import { Public } from 'src/auth/isPublic';
 
 @Controller('pedidos')
 export class PedidosController {
   constructor(private readonly service: PedidosService) {}
 
+  @Public()
   @Post()
   confirmar(@Body() dto: ConfirmarPedidoDto) {
     return this.service.confirmarPedido(dto);

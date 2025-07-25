@@ -3,6 +3,7 @@ import { ProductosService } from './productos.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { FiltroProductoDto } from './dto/filtro-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { Public } from 'src/auth/isPublic';
 
 @Controller('productos')
 export class ProductosController {
@@ -13,26 +14,31 @@ export class ProductosController {
     return this.service.crearProducto(dto);
   }
 
+  @Public()
   @Get()
   listar(@Query() filtros: FiltroProductoDto) {
     return this.service.listar(filtros);
   }
 
+  @Public()
   @Get('categorias/all')
   obtenerCategorias() {
     return this.service.obtenerCategorias();
   }
 
+  @Public()
   @Get('talles/all')
   obtenerTalles() {
     return this.service.obtenerTalles();
   }
 
+  @Public()
   @Get('colores/all')
   obtenerColores() {
     return this.service.obtenerColores();
   }
 
+  @Public()
   @Get(':id')
   obtenerPorId(@Param('id') id: string) {
     return this.service.obtenerPorId(+id);
