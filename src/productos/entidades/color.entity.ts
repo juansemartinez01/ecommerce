@@ -6,8 +6,11 @@ export class Color {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   nombre: string;
+
+  @Column({ default: true })
+  activo: boolean;
 
   @OneToMany(() => ProductoColorTalle, pct => pct.color)
   combinaciones: ProductoColorTalle[];

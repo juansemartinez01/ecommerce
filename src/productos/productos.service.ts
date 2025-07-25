@@ -11,6 +11,7 @@ import { CreateProductoDto } from './dto/create-producto.dto';
 import { FiltroProductoDto } from './dto/filtro-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { CreateColorDto } from './dto/create-color.dto';
 
 @Injectable()
 export class ProductosService {
@@ -120,9 +121,7 @@ export class ProductosService {
     return this.talleRepo.find();
   }
 
-  async obtenerColores(): Promise<Color[]> {
-    return this.colorRepo.find();
-  }
+  
 
   async modificarProducto(id: number, dto: Partial<CreateProductoDto>): Promise<Producto> {
   const producto = await this.productoRepo.findOneBy({ id });
@@ -214,6 +213,30 @@ async crearCategoria(dto: CreateCategoriaDto): Promise<Categoria> {
     return this.categoriaRepo.find();
   }
 
+  //Colores
+
+  async crearColor(dto: CreateColorDto): Promise<Color> {
+    const nuevo = this.colorRepo.create(dto);
+    return this.colorRepo.save(nuevo);
+  }
+
+  async borrarColorLogicamente(id: number): Promise<void> {
+    const color = await this.colorRepo.findOne({ where: { id } });
+    if (!color) throw new NotFoundException('Color no encontrado');
+    color.activo = false;
+    await this.colorRepo.save(color);
+  }
+
+  async obtenerColoresActivos(): Promise<Color[]> {
+    return this.colorRepo.find({
+      where: { activo: true },
+      order: { nombre: 'ASC' }
+    });
+  }
+
+  async obtenerColores(): Promise<Color[]> {
+    return this.colorRepo.find({ order: { nombre: 'ASC' } });
+  }
 
 
 

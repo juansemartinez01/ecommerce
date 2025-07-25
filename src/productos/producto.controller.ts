@@ -6,6 +6,8 @@ import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Public } from 'src/auth/isPublic';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { Categoria } from './entidades/categoria.entity';
+import { Color } from './entidades/color.entity';
+import { CreateColorDto } from './dto/create-color.dto';
 
 @Controller('productos')
 export class ProductosController {
@@ -74,4 +76,28 @@ export class ProductosController {
   obtenerCategorias() {
     return this.service.obtenerCategorias();
   }
+
+  //Colores
+
+  @Post('colores')
+crearColor(@Body() dto: CreateColorDto): Promise<Color> {
+  return this.service.crearColor(dto);
+}
+
+@Patch('colores/:id/baja')
+borrarColor(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  return this.service.borrarColorLogicamente(id);
+}
+
+@Public()
+@Get('colores/activos')
+getColoresActivos(): Promise<Color[]> {
+  return this.service.obtenerColoresActivos();
+}
+
+@Public()
+@Get('colores/all')
+getColoresTodos(): Promise<Color[]> {
+  return this.service.obtenerColores();
+}
 }
