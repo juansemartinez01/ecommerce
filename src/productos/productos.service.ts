@@ -114,9 +114,7 @@ export class ProductosService {
     return producto;
   }
 
-  async obtenerCategorias(): Promise<Categoria[]> {
-    return this.categoriaRepo.find();
-  }
+  
 
   async obtenerTalles(): Promise<Talle[]> {
     return this.talleRepo.find();
@@ -204,6 +202,19 @@ async crearCategoria(dto: CreateCategoriaDto): Promise<Categoria> {
     categoria.activo = false;
     await this.categoriaRepo.save(categoria);
   }
+
+  async obtenerCategoriasActivas(): Promise<Categoria[]> {
+  return this.categoriaRepo.find({
+    where: { activo: true },
+    order: { nombre: 'ASC' }
+  });
+}
+
+  async obtenerCategorias(): Promise<Categoria[]> {
+    return this.categoriaRepo.find();
+  }
+
+
 
 
 }

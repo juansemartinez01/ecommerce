@@ -22,11 +22,7 @@ export class ProductosController {
     return this.service.listar(filtros);
   }
 
-  @Public()
-  @Get('categorias/all')
-  obtenerCategorias() {
-    return this.service.obtenerCategorias();
-  }
+  
 
   @Public()
   @Get('talles/all')
@@ -65,5 +61,17 @@ export class ProductosController {
   @Patch('categorias/:id/baja')
   borrarCategoriaLogica(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.service.borrarCategoriaLogicamente(id);
+  }
+
+  @Public()
+  @Get('categorias/activas')
+  getCategoriasActivas(): Promise<Categoria[]> {
+    return this.service.obtenerCategoriasActivas();
+  }
+
+  @Public()
+  @Get('categorias/all')
+  obtenerCategorias() {
+    return this.service.obtenerCategorias();
   }
 }
