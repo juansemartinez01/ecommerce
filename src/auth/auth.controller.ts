@@ -20,7 +20,6 @@ export class AuthController {
   }
 
   @Public()
-  @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Req() req: Request) {
     return this.authService.login(req.user);
