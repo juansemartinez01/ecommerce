@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Param, Query, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch, Delete, ParseIntPipe } from '@nestjs/common';
 import { ProductosService } from './productos.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { FiltroProductoDto } from './dto/filtro-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Public } from 'src/auth/isPublic';
+import { CreateCategoriaDto } from './dto/create-categoria.dto';
+import { Categoria } from './entidades/categoria.entity';
 
 @Controller('productos')
 export class ProductosController {
@@ -52,5 +54,16 @@ export class ProductosController {
   @Delete(':id')
   eliminar(@Param('id') id: number) {
     return this.service.eliminarProducto(id);
+  }
+
+  //Categoria
+  @Post('categorias')
+  crearCategoria(@Body() dto: CreateCategoriaDto): Promise<Categoria> {
+    return this.service.crearCategoria(dto);
+  }
+
+  @Patch('categorias/:id/baja')
+  borrarCategoriaLogica(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.service.borrarCategoriaLogicamente(id);
   }
 }

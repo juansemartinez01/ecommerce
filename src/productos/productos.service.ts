@@ -10,6 +10,7 @@ import { ImagenProducto } from './entidades/imagen-producto.entity';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { FiltroProductoDto } from './dto/filtro-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { CreateCategoriaDto } from './dto/create-categoria.dto';
 
 @Injectable()
 export class ProductosService {
@@ -189,6 +190,20 @@ async eliminarProducto(id: number): Promise<void> {
   if (!producto) throw new NotFoundException(`Producto con ID ${id} no encontrado`);
   await this.productoRepo.delete(id);
 }
+
+
+//Categoria
+async crearCategoria(dto: CreateCategoriaDto): Promise<Categoria> {
+    const nueva = this.categoriaRepo.create(dto);
+    return this.categoriaRepo.save(nueva);
+  }
+
+  async borrarCategoriaLogicamente(id: number): Promise<void> {
+    const categoria = await this.categoriaRepo.findOne({ where: { id } });
+    if (!categoria) throw new NotFoundException('Categoría no encontrada');
+    categoria.activo = false;
+    await this.categoriaRepo.save(categoria);
+  }
 
 
 }
