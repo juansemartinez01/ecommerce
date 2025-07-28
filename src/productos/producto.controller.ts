@@ -47,9 +47,13 @@ export class ProductosController {
   }
 
   @Patch(':id')
-  actualizar(@Param('id') id: number, @Body() dto: UpdateProductoDto) {
+  async actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProductoDto
+  ) {
     return this.service.modificarProducto(id, dto);
   }
+
 
   @Delete(':id')
   eliminar(@Param('id') id: number) {
