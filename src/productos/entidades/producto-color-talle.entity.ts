@@ -19,4 +19,7 @@ export class ProductoColorTalle {
 
   @Column('int')
   stock: number;
+
+  @Column({ default: true })
+  activo: boolean;
 }

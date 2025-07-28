@@ -74,48 +74,48 @@ export class ProductosService {
   }
 
   async listar(filtros: FiltroProductoDto): Promise<Producto[]> {
-    const query = this.productoRepo.createQueryBuilder('producto')
-      .leftJoinAndSelect('producto.categoria', 'categoria')
-      .leftJoinAndSelect('producto.combinaciones', 'combinaciones')
-      .leftJoinAndSelect('combinaciones.talle', 'talle')
-      .leftJoinAndSelect('combinaciones.color', 'color')
-      .leftJoinAndSelect('producto.imagenes', 'imagenes');
+  const query = this.productoRepo.createQueryBuilder('producto')
+    .leftJoinAndSelect('producto.categoria', 'categoria')
+    // 🔹 Filtra combinaciones activas directamente en el JOIN
+    .leftJoinAndSelect('producto.combinaciones', 'combinaciones', 'combinaciones.activo = true')
+    .leftJoinAndSelect('combinaciones.talle', 'talle')
+    .leftJoinAndSelect('combinaciones.color', 'color')
+    .leftJoinAndSelect('producto.imagenes', 'imagenes');
 
-    if (filtros.categoriaId) {
-      query.andWhere('categoria.id = :categoriaId', { categoriaId: filtros.categoriaId });
-    }
-
-    if (filtros.enOferta !== undefined) {
-      query.andWhere('producto.enOferta = :enOferta', { enOferta: filtros.enOferta });
-    }
-
-    if (filtros.talleId) {
-      query.andWhere('combinaciones.talle = :talleId', { talleId: filtros.talleId });
-    }
-
-    if (filtros.destacado !== undefined) {
-      query.andWhere('producto.destacado = :destacado', { destacado: filtros.destacado });
-    }
-
-
-    return query.getMany();
+  if (filtros.categoriaId) {
+    query.andWhere('categoria.id = :categoriaId', { categoriaId: filtros.categoriaId });
   }
+
+  if (filtros.enOferta !== undefined) {
+    query.andWhere('producto.enOferta = :enOferta', { enOferta: filtros.enOferta });
+  }
+
+  if (filtros.talleId) {
+    query.andWhere('talle.id = :talleId', { talleId: filtros.talleId });
+  }
+
+  if (filtros.destacado !== undefined) {
+    query.andWhere('producto.destacado = :destacado', { destacado: filtros.destacado });
+  }
+
+  return query.getMany();
+}
+
 
   async obtenerPorId(id: number): Promise<Producto> {
-    const producto = await this.productoRepo.findOne({
-      where: { id },
-      relations: [
-        'categoria',
-        'combinaciones',
-        'combinaciones.talle',
-        'combinaciones.color',
-        'imagenes',
-      ],
-    });
+  const producto = await this.productoRepo.createQueryBuilder('producto')
+    .leftJoinAndSelect('producto.categoria', 'categoria')
+    .leftJoinAndSelect('producto.combinaciones', 'combinaciones', 'combinaciones.activo = true')
+    .leftJoinAndSelect('combinaciones.talle', 'talle')
+    .leftJoinAndSelect('combinaciones.color', 'color')
+    .leftJoinAndSelect('producto.imagenes', 'imagenes')
+    .where('producto.id = :id', { id })
+    .getOne();
 
-    if (!producto) throw new NotFoundException(`Producto con ID ${id} no encontrado`);
-    return producto;
-  }
+  if (!producto) throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+  return producto;
+}
+
 
   
 
@@ -192,7 +192,10 @@ async modificarProducto(id: number, dto: UpdateProductoDto): Promise<Producto> {
       // ❌ Eliminar combinaciones que no vinieron en el DTO
       const aEliminar = producto.combinaciones.filter(c => !idsActualizados.includes(`${c.color.id}-${c.talle.id}`));
       if (aEliminar.length > 0) {
-        await queryRunner.manager.remove(ProductoColorTalle, aEliminar);
+        for (const comb of aEliminar) {
+          comb.activo = false;
+          await queryRunner.manager.save(comb);
+}
       }
     }
 
