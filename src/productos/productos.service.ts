@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Producto } from './entidades/producto.entity';
 import { Categoria } from './entidades/categoria.entity';
 import { Talle } from './entidades/talle.entity';
@@ -29,6 +29,7 @@ export class ProductosService {
     private productoColorTalleRepo: Repository<ProductoColorTalle>,
     @InjectRepository(ImagenProducto)
     private imagenRepo: Repository<ImagenProducto>,
+    private dataSource: DataSource
   ) {}
 
   async crearProducto(dto: CreateProductoDto): Promise<Producto> {
@@ -122,63 +123,104 @@ export class ProductosService {
 
   
 
-  async modificarProducto(id: number, dto: Partial<CreateProductoDto>): Promise<Producto> {
-  const producto = await this.productoRepo.findOneBy({ id });
-  if (!producto) throw new Error(`Producto con id ${id} no encontrado`);
 
-  // Actualizar campos si vienen en el DTO
-  if (dto.nombre) producto.nombre = dto.nombre;
-  if (dto.descripcion) producto.descripcion = dto.descripcion;
-  if (dto.precio !== undefined) producto.precio = dto.precio;
-  if (dto.precioOferta !== undefined) producto.precioOferta = dto.precioOferta;
-  if (dto.enOferta !== undefined) producto.enOferta = dto.enOferta;
-  if (dto.destacado !== undefined) producto.destacado = dto.destacado;
 
-  if (dto.categoriaId) {
-    const categoria = await this.categoriaRepo.findOneBy({ id: dto.categoriaId });
-    if (!categoria) throw new Error(`Categoría con id ${dto.categoriaId} no encontrada`);
-    producto.categoria = categoria;
-  }
+async modificarProducto(id: number, dto: UpdateProductoDto): Promise<Producto> {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
 
-  // Guardar modificaciones básicas
-  await this.productoRepo.save(producto);
+  try {
+    // 🔹 1. Buscar producto existente
+    const producto = await queryRunner.manager.findOne(Producto, {
+      where: { id },
+      relations: ['combinaciones', 'imagenes', 'combinaciones.color', 'combinaciones.talle'],
+    });
 
-  // Actualizar combinaciones si vienen en el DTO
-  if (dto.combinaciones && dto.combinaciones.length > 0) {
-    for (const c of dto.combinaciones) {
-      const existente = await this.productoColorTalleRepo.findOne({
-        where: {
-          producto: { id },
-          color: { id: c.colorId },
-          talle: { id: c.talleId },
-        },
-        relations: ['producto', 'color', 'talle'],
-      });
+    if (!producto) throw new NotFoundException(`Producto con id ${id} no encontrado`);
 
-      if (existente) {
-        // Solo actualizar stock
-        existente.stock = c.stock;
-        await this.productoColorTalleRepo.save(existente);
-      } else {
-        // Crear nueva combinación si no existía
-        const color = await this.colorRepo.findOneBy({ id: c.colorId });
-        const talle = await this.talleRepo.findOneBy({ id: c.talleId });
-        if (!color || !talle) throw new Error('Color o Talle inválido');
+    // 🔹 2. Actualizar campos básicos
+    if (dto.nombre !== undefined) producto.nombre = dto.nombre;
+    if (dto.descripcion !== undefined) producto.descripcion = dto.descripcion;
+    if (dto.precio !== undefined) producto.precio = dto.precio;
+    if (dto.precioOferta !== undefined) producto.precioOferta = dto.precioOferta;
+    if (dto.enOferta !== undefined) producto.enOferta = dto.enOferta;
+    if (dto.destacado !== undefined) producto.destacado = dto.destacado;
 
-        const nueva = this.productoColorTalleRepo.create({
-          producto,
-          color,
-          talle,
-          stock: c.stock,
-        });
+    // 🔹 3. Actualizar categoría si viene en el DTO
+    if (dto.categoriaId !== undefined) {
+      const categoria = await queryRunner.manager.findOne(Categoria, { where: { id: dto.categoriaId } });
+      if (!categoria) throw new NotFoundException(`Categoría con id ${dto.categoriaId} no encontrada`);
+      producto.categoria = categoria;
+    }
 
-        await this.productoColorTalleRepo.save(nueva);
+    await queryRunner.manager.save(producto);
+
+    // 🔹 4. Actualizar combinaciones (alta, modificación y eliminación de las no enviadas)
+    if (dto.combinaciones) {
+      // Mapeo de combinaciones existentes
+      const existentesMap = new Map(producto.combinaciones.map(c => [ `${c.color.id}-${c.talle.id}`, c ]));
+
+      // IDs de combinaciones que deben quedar
+      const idsActualizados: string[] = [];
+
+      for (const c of dto.combinaciones) {
+        const key = `${c.colorId}-${c.talleId}`;
+        idsActualizados.push(key);
+
+        if (existentesMap.has(key)) {
+          // ✅ Si existe, solo actualizo stock
+          const existente = existentesMap.get(key) as ProductoColorTalle;
+          existente.stock = c.stock;
+          await queryRunner.manager.save(existente);
+        } else {
+          // ✅ Si no existe, creo la nueva combinación
+          const color = await queryRunner.manager.findOne(Color, { where: { id: c.colorId } });
+          const talle = await queryRunner.manager.findOne(Talle, { where: { id: c.talleId } });
+          if (!color || !talle) throw new NotFoundException('Color o Talle inválido');
+
+          const nueva = queryRunner.manager.create(ProductoColorTalle, {
+            producto,
+            color,
+            talle,
+            stock: c.stock,
+          });
+          await queryRunner.manager.save(nueva);
+        }
+      }
+
+      // ❌ Eliminar combinaciones que no vinieron en el DTO
+      const aEliminar = producto.combinaciones.filter(c => !idsActualizados.includes(`${c.color.id}-${c.talle.id}`));
+      if (aEliminar.length > 0) {
+        await queryRunner.manager.remove(ProductoColorTalle, aEliminar);
       }
     }
-  }
 
-  return this.obtenerPorId(id);
+    // 🔹 5. Actualizar imágenes si vienen nuevas
+    if (dto.imagenes) {
+      // ❌ Eliminar imágenes existentes
+      await queryRunner.manager.delete(ImagenProducto, { producto: { id } });
+
+      // ✅ Insertar nuevas imágenes
+      for (const url of dto.imagenes) {
+        const nuevaImg = queryRunner.manager.create(ImagenProducto, { url, producto });
+        await queryRunner.manager.save(nuevaImg);
+      }
+    }
+
+    // 🔹 6. Confirmar transacción
+    await queryRunner.commitTransaction();
+
+    // 🔹 7. Retornar producto actualizado con todas sus relaciones
+    return this.obtenerPorId(id);
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw error;
+  } finally {
+    await queryRunner.release();
+  }
 }
+
 
 
 async eliminarProducto(id: number): Promise<void> {
