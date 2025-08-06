@@ -10,6 +10,7 @@ import { PedidosModule } from './pedidos/pedidos.module';
 import { DescuentosModule } from './descuentos/descuentos.module';
 import { FilesModule } from './files/files.module';
 import { ConfigModule } from '@nestjs/config';
+import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ConfigModule } from '@nestjs/config';
     PedidosModule,
     DescuentosModule,
     FilesModule,
+    MercadoPagoModule,
   ],
 })
 export class AppModule {}
