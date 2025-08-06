@@ -44,7 +44,7 @@ export class MercadoPagoController {
             talleId: item.talla.id,
             colorId: item.color?.id || 0,
           })),
-          metodoPago: 'MercadoPago',
+          metodoPago: 'Online',
           nombreCliente: metadata.nombre_cliente,
           apellidoCliente: metadata.apellido_cliente,
           emailCliente: metadata.email_cliente,
