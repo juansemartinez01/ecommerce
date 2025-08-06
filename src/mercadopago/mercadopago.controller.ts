@@ -55,6 +55,8 @@ export class MercadoPagoController {
         };
 
         // ✅ Enviar el pedido al servicio interno de pedidos
+
+        console.log('Hola - preparando envío de pedido a backend interno', pedidoPayload);
         const backendResponse = await fetch(`${process.env.BACKEND_API_URL}/pedidos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
