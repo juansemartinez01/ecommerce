@@ -9,7 +9,7 @@ export class MercadoPagoController {
     accessToken: process.env.MP_ACCESS_TOKEN!, // Token seguro de MercadoPago
   });
 
-  // ✅ 1. ENDPOINT PARA RECIBIR EL WEBHOOK
+  // ✅ 1. ENDPOINT PARA RECIBIR EL WEBHOOK DE MERCADOPAGO
   @Public()
   @Post('webhook')
   async handleWebhook(@Req() req: Request, @Res() res: Response) {
@@ -26,7 +26,10 @@ export class MercadoPagoController {
       if (payment.status === 'approved') {
         const metadata: any = payment.metadata;
 
-        if (!metadata?.cartItems) {
+        console.log('📦 Metadata recibido desde MercadoPago:', metadata);
+
+        // ✅ Validar que exista cart_items
+        if (!metadata?.cart_items) {
           console.warn('⚠️ Metadata incompleta, ignorando webhook.');
           return res.status(HttpStatus.OK).json({ received: true });
         }
@@ -34,7 +37,7 @@ export class MercadoPagoController {
         // ✅ Construir el payload del pedido
         const pedidoPayload = {
           usuarioId: 1,
-          items: metadata.cartItems.map((item: any) => ({
+          items: metadata.cart_items.map((item: any) => ({
             productoId: item.id,
             cantidad: item.cantidad,
             precioUnitario: item.precio_oferta ?? item.precio_original,
@@ -42,21 +45,21 @@ export class MercadoPagoController {
             colorId: item.color?.id || 0,
           })),
           metodoPago: 'MercadoPago',
-          nombreCliente: metadata.nombreCliente,
-          apellidoCliente: metadata.apellidoCliente,
-          emailCliente: metadata.emailCliente,
-          telefonoCliente: metadata.telefonoCliente,
-          nombreEnvio: metadata.realizarEnvio ? metadata.nombreEnvio : '',
-          direccionEnvio: metadata.realizarEnvio ? metadata.direccionEnvio : '',
-          codigoPostalEnvio: metadata.realizarEnvio ? metadata.codigoPostalEnvio : '',
-          ciudadEnvio: metadata.realizarEnvio ? metadata.ciudadEnvio : '',
-          provinciaEnvio: metadata.realizarEnvio ? metadata.provinciaEnvio : '',
-          aclaracionesEnvio: metadata.realizarEnvio ? metadata.aclaracionesEnvio : '',
+          nombreCliente: metadata.nombre_cliente,
+          apellidoCliente: metadata.apellido_cliente,
+          emailCliente: metadata.email_cliente,
+          telefonoCliente: metadata.telefono_cliente,
+          nombreEnvio: metadata.realizar_envio ? metadata.nombre_envio : '',
+          direccionEnvio: metadata.realizar_envio ? metadata.direccion_envio : '',
+          codigoPostalEnvio: metadata.realizar_envio ? metadata.codigo_postal_envio : '',
+          ciudadEnvio: metadata.realizar_envio ? metadata.ciudad_envio : '',
+          provinciaEnvio: metadata.realizar_envio ? metadata.provincia_envio : '',
+          aclaracionesEnvio: metadata.realizar_envio ? metadata.aclaraciones_envio : '',
         };
 
-        // ✅ Enviar el pedido al servicio interno de pedidos
+        // ✅ Enviar pedido a tu servicio interno
+        console.log('✅ Hola - enviando pedido a backend interno', pedidoPayload);
 
-        console.log('Hola - preparando envío de pedido a backend interno', pedidoPayload);
         const backendResponse = await fetch(`${process.env.BACKEND_API_URL}/pedidos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -74,7 +77,7 @@ export class MercadoPagoController {
     }
   }
 
-  // ✅ 2. ENDPOINT PARA CREAR LA PREFERENCIA DIRECTAMENTE DESDE EL BACKEND
+  // ✅ 2. ENDPOINT PARA CREAR LA PREFERENCIA DE PAGO DIRECTAMENTE DESDE EL BACKEND
   @Public()
   @Post('preference')
   async createPreference(@Body() body: any, @Res() res: Response) {
@@ -99,39 +102,45 @@ export class MercadoPagoController {
         return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Datos inválidos' });
       }
 
-      const preference = await new Preference(this.mercadopago).create({
-        body: {
-          items: [
-            {
-              id: '1',
-              title: 'Compra en Mutuo',
-              quantity: 1,
-              unit_price: total,
-            },
-          ],
-          metadata: {
-            cartItems,
-            nombreCliente,
-            apellidoCliente,
-            telefonoCliente,
-            emailCliente,
-            realizarEnvio,
-            nombreEnvio,
-            direccionEnvio,
-            codigoPostalEnvio,
-            ciudadEnvio,
-            provinciaEnvio,
-            aclaracionesEnvio,
+      // ✅ Usar BACKEND_API_URL (Railway) para construir el notification_url
+      const backendUrl = process.env.BACKEND_API_URL ?? 'https://mi-backend.up.railway.app';
+      const frontendUrl = process.env.FRONTEND_URL ?? 'https://mi-frontend.vercel.app';
+
+      const preferenceData = {
+        items: [
+          {
+            id: '1',
+            title: 'Compra en Mutuo',
+            quantity: 1,
+            unit_price: Number(total),
           },
-          back_urls: {
-            success: `${process.env.FRONTEND_URL}/exitoso`,
-            failure: `${process.env.FRONTEND_URL}/fallido`,
-            pending: `${process.env.FRONTEND_URL}/pendiente`,
-          },
-          auto_return: 'approved',
-          notification_url: `${process.env.BACKEND_URL}/mercadopago/webhook`,
+        ],
+        metadata: {
+          cart_items: cartItems,
+          nombre_cliente: nombreCliente,
+          apellido_cliente: apellidoCliente,
+          telefono_cliente: telefonoCliente,
+          email_cliente: emailCliente,
+          realizar_envio: realizarEnvio,
+          nombre_envio: nombreEnvio,
+          direccion_envio: direccionEnvio,
+          codigo_postal_envio: codigoPostalEnvio,
+          ciudad_envio: ciudadEnvio,
+          provincia_envio: provinciaEnvio,
+          aclaraciones_envio: aclaracionesEnvio,
         },
-      });
+        back_urls: {
+          success: `${frontendUrl}/exitoso`,
+          failure: `${frontendUrl}/fallido`,
+          pending: `${frontendUrl}/pendiente`,
+        },
+        auto_return: 'approved',
+        notification_url: `${backendUrl}/mercadopago/webhook`,
+      };
+
+      console.log('✅ Creando preferencia en MercadoPago con:', preferenceData);
+
+      const preference = await new Preference(this.mercadopago).create({ body: preferenceData });
 
       return res.status(HttpStatus.OK).json({ init_point: preference.init_point });
     } catch (error) {
