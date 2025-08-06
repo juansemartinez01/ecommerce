@@ -1,7 +1,6 @@
 import { Controller, Post, Body, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
-import fetch from 'node-fetch';
 
 @Controller('mercadopago')
 export class MercadoPagoController {
