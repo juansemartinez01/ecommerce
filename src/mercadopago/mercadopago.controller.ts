@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import { Public } from 'src/auth/isPublic';
 
 @Controller('mercadopago')
 export class MercadoPagoController {
@@ -9,6 +10,7 @@ export class MercadoPagoController {
   });
 
   // ✅ 1. ENDPOINT PARA RECIBIR EL WEBHOOK
+  @Public()
   @Post('webhook')
   async handleWebhook(@Req() req: Request, @Res() res: Response) {
     try {
@@ -71,6 +73,7 @@ export class MercadoPagoController {
   }
 
   // ✅ 2. ENDPOINT PARA CREAR LA PREFERENCIA DIRECTAMENTE DESDE EL BACKEND
+  @Public()
   @Post('preference')
   async createPreference(@Body() body: any, @Res() res: Response) {
     try {
